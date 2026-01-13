@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ASPICE 3.0: A Developer's Guide</title>
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap");
+
+        :root {
+            --ink: #0c1b2a;
+            --subtle: #5b6470;
+            --accent: #e4572e;
+            --accent-2: #0f7b6c;
+            --bg: #f4efe8;
+            --paper: #ffffff;
+            --shadow: rgba(12, 27, 42, 0.18);
+            --stroke: #e6ddd3;
+            --scale: 1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+            color: var(--ink);
+            background: radial-gradient(circle at 12% 12%, #fff1e7 0%, transparent 40%),
+                radial-gradient(circle at 88% 18%, #e4f4f1 0%, transparent 38%),
+                linear-gradient(120deg, #f3eee7 0%, #f8f5f0 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .deck {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+        }
+
+        .frame {
+            position: relative;
+            width: 1200px;
+            height: 720px;
+            background: var(--paper);
+            border-radius: 24px;
+            box-shadow: 0 30px 80px var(--shadow);
+            border: 1px solid var(--stroke);
+            overflow: hidden;
+            transform: scale(var(--scale));
+            transform-origin: center;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            padding: clamp(18px, 3vw, 38px);
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 14px;
+            opacity: 0;
+            transform: translateX(30px) scale(0.98);
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+            z-index: 2;
+        }
+
+        .slide-title {
+            font-family: "Fraunces", "Times New Roman", serif;
+            font-size: clamp(25px, 2.9vw, 42px);
+            letter-spacing: 0.32px;
+        }
+
+        .slide-subtitle {
+            color: var(--subtle);
+            font-size: clamp(16px, 2vw, 22px);
+        }
+
+        .content {
+            display: grid;
+            gap: 16px;
+            font-size: clamp(16px, 1.85vw, 21px);
+            line-height: 1.5;
+        }
+
+        .content ul {
+            margin-left: 22px;
+        }
+
+        .content ul ul {
+            margin-top: 6px;
+            margin-left: 18px;
+            list-style: circle;
+            color: var(--subtle);
+            font-size: 0.95em;
+        }
+
+        .content li {
+            margin-bottom: 8px;
+        }
+
+        .content strong {
+            color: var(--accent-2);
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 18px;
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(255, 106, 61, 0.12);
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
+
+        .card {
+            border: 1px solid var(--stroke);
+            border-radius: 16px;
+            padding: 18px 20px;
+            background: #fcfaf6;
+        }
+
+        .card h3 {
+            margin-bottom: 8px;
+            font-size: 17px;
+            color: var(--accent-2);
+        }
+
+        .agenda-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .agenda-item {
+            padding: 16px 18px;
+            border-radius: 12px;
+            background: linear-gradient(120deg, rgba(228, 87, 46, 0.12), rgba(15, 123, 108, 0.12));
+            border: 1px solid var(--stroke);
+            font-weight: 600;
+        }
+
+        .visual {
+            display: grid;
+            place-items: center;
+            border-radius: 16px;
+            background: #fdfbf7;
+            border: 1px dashed var(--stroke);
+            padding: 16px;
+        }
+
+        .visual img {
+            max-width: 100%;
+            max-height: clamp(220px, 40vh, 360px);
+            height: auto;
+            object-fit: contain;
+            border-radius: 12px;
+        }
+
+        .v-model-svg {
+            width: min(520px, 100%);
+            height: auto;
+        }
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: var(--subtle);
+        }
+
+        .controls {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%) scale(var(--scale));
+            transform-origin: center;
+            bottom: max(16px, env(safe-area-inset-bottom));
+            display: flex;
+            gap: 12px;
+            z-index: 10;
+        }
+
+        .orientation-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(244, 239, 232, 0.96);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+            z-index: 20;
+        }
+
+        .orientation-card {
+            max-width: 320px;
+            border: 1px solid var(--stroke);
+            border-radius: 18px;
+            background: #fff;
+            padding: 18px 20px;
+            box-shadow: 0 16px 40px rgba(12, 27, 42, 0.16);
+        }
+
+        .orientation-card h2 {
+            font-family: "Fraunces", "Times New Roman", serif;
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+
+        .orientation-card p {
+            color: var(--subtle);
+            margin-bottom: 14px;
+            font-size: 14px;
+        }
+
+        .lock-button {
+            border-radius: 10px;
+            padding: 10px 14px;
+            background: linear-gradient(135deg, rgba(228, 87, 46, 0.12), rgba(15, 123, 108, 0.12));
+            border: 1px solid var(--stroke);
+        }
+
+        button {
+            padding: 10px 16px;
+            border-radius: 999px;
+            border: 1px solid var(--stroke);
+            background: #fff;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--ink);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(16, 18, 26, 0.12);
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 6px;
+            width: 0;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            transition: width 0.25s ease;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 18px;
+        }
+
+        th, td {
+            border: 1px solid var(--stroke);
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background: #f5f0ea;
+        }
+
+        .capability-table {
+            font-size: 12px;
+        }
+
+        .capability-table th,
+        .capability-table td {
+            padding: 2px 4px;
+            line-height: 1.15;
+        }
+
+        .capability-notes {
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        .capability-visual {
+            padding: 10px;
+        }
+
+        .capability-visual img {
+            max-height: clamp(180px, 34vh, 300px);
+        }
+
+        .title-slide {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            align-items: stretch;
+            gap: 20px;
+        }
+
+        .title-mark {
+            width: min(320px, 100%);
+            aspect-ratio: 1;
+            border-radius: 28px;
+            background: conic-gradient(from 200deg, #e4572e, #ffd7c8, #0f7b6c, #e4572e);
+            display: grid;
+            place-items: center;
+            color: #fff;
+            font-family: "Fraunces", serif;
+            font-size: clamp(24px, 2.8vw, 34px);
+            text-align: center;
+            padding: 24px;
+            align-self: center;
+            justify-self: center;
+        }
+
+        .title-info {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            justify-content: space-between;
+            align-self: stretch;
+        }
+
+        .meta {
+            margin-top: 14px;
+            display: grid;
+            gap: 6px;
+            font-size: clamp(15px, 1.6vw, 18px);
+            color: var(--subtle);
+        }
+
+        .github-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 10px 18px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(228, 87, 46, 0.08), rgba(15, 123, 108, 0.08));
+            border: 1px solid var(--stroke);
+            color: var(--accent-2);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: clamp(14px, 1.5vw, 16px);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            width: fit-content;
+        }
+
+        .github-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(12, 27, 42, 0.15);
+            background: linear-gradient(135deg, rgba(228, 87, 46, 0.12), rgba(15, 123, 108, 0.12));
+        }
+
+        .github-icon {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .section-title {
+            font-size: clamp(15px, 1.8vw, 19px);
+            color: var(--accent-2);
+            margin-top: 6px;
+        }
+
+        .callout {
+            border-radius: 16px;
+            border: 1px solid #f0d6c8;
+            background: #fff3ea;
+            padding: 16px 18px;
+        }
+
+        .callout h3 {
+            margin-bottom: 8px;
+            font-size: 18px;
+            color: var(--accent);
+        }
+
+        .callout.secondary {
+            border-color: #cfe7e2;
+            background: #eef7f5;
+        }
+
+        .stack {
+            display: grid;
+            gap: 14px;
+        }
+
+        .visual.top-align {
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .frame {
+                width: min(98vw, 980px);
+                height: auto;
+                min-height: 62vh;
+            }
+            .title-slide {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            .controls {
+                bottom: 16px;
+            }
+            .deck {
+                padding: 18px;
+                align-items: flex-start;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                overflow: auto;
+            }
+            .deck {
+                padding: 12px;
+                min-height: 100dvh;
+            }
+            .frame {
+                width: 100%;
+                min-height: 68vh;
+                border-radius: 18px;
+            }
+            .slide {
+                padding: 18px;
+                gap: 10px;
+            }
+            .controls {
+                position: sticky;
+                bottom: 12px;
+                transform: translateX(-50%);
+            }
+            .agenda-item {
+                padding: 12px 14px;
+            }
+        }
+
+        @media (orientation: portrait) and (max-width: 900px) {
+            .orientation-overlay {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="orientation-overlay" id="orientationOverlay" aria-live="polite">
+        <div class="orientation-card">
+            <h2>Rotate to Landscape</h2>
+            <p>This deck is designed for landscape. Rotate your phone for the best view.</p>
+            <button class="lock-button" id="lockOrientation" type="button">Lock to landscape</button>
+        </div>
+    </div>
+    <div class="deck">
+        <div class="frame">
+            <div class="progress" id="progress"></div>
+
+            <section class="slide active" data-title="Title">
+                <div></div>
+                <div class="title-slide">
+                    <div class="title-info">
+                        <div class="pill">Developer's Guide</div>
+                        <h1 class="slide-title">A study of ASPICE</h1>
+                        <p class="slide-subtitle">What Developers Need to Do in ASPICE projects</p>
+                        <div class="meta">
+                            <p>Nguyen Chiem Minh Vu</p>
+                            <p>nguyenchiemminhvu@gmail.com</p>
+                            <p>February 14, 2026</p>
+                            <a href="https://github.com/nguyenchiemminhvu/ASPICE_study" target="_blank" class="github-link">
+                                <svg class="github-icon" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                                </svg>
+                                More details on GitHub
+                            </a>
+                        </div>
+                    </div>
+                    <div class="title-mark">ASPICE 3.0</div>
+                </div>
+                <div class="footer">
+                    <span>Slide</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="Agenda">
+                <h1 class="slide-title">Agenda</h1>
+                <div class="content">
+                    <div class="agenda-list">
+                        <div class="agenda-item">1. What ASPICE Really Is (and Isn't)</div>
+                        <div class="agenda-item">2. Understanding Process Assessment</div>
+                        <div class="agenda-item">3. The V-Model and Process Reference Model</div>
+                        <div class="agenda-item">4. System Engineering (SYS) Processes</div>
+                        <div class="agenda-item">5. Software Engineering (SWE) Processes</div>
+                        <div class="agenda-item">6. Process Assessment Model &amp; Traceability</div>
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>Agenda</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="Common Misunderstandings">
+                <h1 class="slide-title">Common Misunderstandings About ASPICE</h1>
+                <div class="content">
+                    <p class="slide-subtitle">ASPICE is NOT:</p>
+                    <div class="two-col">
+                        <div class="card">
+                            <h3>A coding standard</h3>
+                            <p>That is not about MISRA-C, AUTOSAR...</p>
+                        </div>
+                        <div class="card">
+                            <h3>A document template or design method</h3>
+                            <p>No required UML or template.</p>
+                        </div>
+                        <div class="card">
+                            <h3>A specific tool requirement</h3>
+                            <p>Tools are your choice.</p>
+                        </div>
+                        <div class="card">
+                            <h3>A testing framework</h3>
+                            <p>It does not mandate unit test tools.</p>
+                        </div>
+                        <div class="card">
+                            <h3>A quality guarantee by itself</h3>
+                            <p>Process does not equal zero defects.</p>
+                        </div>
+                        <div class="card">
+                            <h3>A certification for bug-free software</h3>
+                            <p>It is a process assessment.</p>
+                        </div>
+                        <div class="card">
+                            <h3>A one-time audit preparation activity</h3>
+                            <p>It is continuous, every sprint and release.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>What it is not</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="Process Assessment and SPICE">
+                <h1 class="slide-title">Process Assessment and SPICE</h1>
+                <div class="content two-col">
+                    <div>
+                        <div class="callout">
+                            <h3>SPICE = Software Process Improvement and Capability Determination</h3>
+                            <p>Origin: ISO/IEC 15504 -> ISO/IEC 330xx series.</p>
+                        </div>
+                        <h3 class="section-title">Key questions SPICE asks</h3>
+                        <ul>
+                            <li>Can your team build software predictably?</li>
+                            <li>Do results happen consistently?</li>
+                            <li>Can the process be repeated and improved?</li>
+                        </ul>
+                        <div class="callout secondary">
+                            <h3>Assessment focus</h3>
+                            <p>Process capability, systematic evidence, predictability.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>Origins</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="What ASPICE Really Is">
+                <h1 class="slide-title">What ASPICE Really Is</h1>
+                <div class="content two-col">
+                    <div>
+                        <div class="callout">
+                            <h3>Automotive-SPICE</h3>
+                            <p>Process assessment framework for Automotive Software.</p>
+                        </div>
+                        <h3 class="section-title">Why Automotive SPICE exists</h3>
+                        <ul>
+                            <li>Safety-critical software and long product lifecycles</li>
+                            <li>Complex supply chains (OEM -> Tier-1 -> Tier-2)</li>
+                            <li>Need for a shared assessment language</li>
+                        </ul>
+                        <div class="callout secondary">
+                            <h3>ASPICE = PRM + PAM</h3>
+                            <p>PRM defines what to do.</p>
+                            <p>PAM rates how well you do it.</p>
+                        </div>
+                    </div>
+                    <div class="visual">
+                        <img src="images/prm_pam_relationship.png" alt="PRM and PAM relationship" />
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>Framework view</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="V-Model Mindset">
+                <h1 class="slide-title">The V-Model Mindset</h1>
+                <div class="content two-col">
+                    <div>
+                        <div class="callout">
+                            <h3>From Waterfall to V-Model</h3>
+                            <p>Development activities are paired with early test planning.</p>
+                        </div>
+                        <h3 class="section-title">Left side: Development</h3>
+                        <ul>
+                            <li>Requirements -> Design -> Implementation</li>
+                        </ul>
+                        <h3 class="section-title">Right side: Verification</h3>
+                        <ul>
+                            <li>Unit Test <- Integration Test <- System Test</li>
+                        </ul>
+                        <div class="callout secondary">
+                            <h3>Key concept: Traceability</h3>
+                            <p>Each requirement -> design -> code -> test.</p>
+                        </div>
+                    </div>
+                    <div class="visual">
+                        <img src="images/vmodel_concept.png" alt="V-model concept" />
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>V-Model</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="PRM Structure">
+                <h1 class="slide-title">ASPICE Process Reference Model</h1>
+                <div class="content two-col">
+                    <div>
+                        <div class="callout">
+                            <h3>Three process categories</h3>
+                            <p>Primary, Organizational, Supporting life cycle processes.</p>
+                        </div>
+                        <ul>
+                            <li>Primary Life Cycle (ACQ, SPL, SYS, SWE)</li>
+                            <li>Organizational Life Cycle (MAN, PIM, REU)</li>
+                            <li>Supporting Life Cycle (SUP)</li>
+                        </ul>
+                        <div class="callout secondary">
+                            <h3>Heart of ASPICE</h3>
+                            <p>SYS + SWE implement the V-model step by step.</p>
+                        </div>
+                        <h3 class="section-title">Each process has</h3>
+                        <ul>
+                            <li>ID and Name</li>
+                            <li>Purpose</li>
+                            <li>Activities (Base Practices - BP)</li>
+                            <li>Outcomes (Work Products - WP)</li>
+                        </ul>
+                    </div>
+                    <div class="visual top-align">
+                        <img src="images/aspice_prm_3.0.png" alt="ASPICE PRM 3.0" />
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>PRM structure</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="What is a System">
+                <h1 class="slide-title">What is a "System" in Automotive?</h1>
+                <div class="content two-col">
+                    <div>
+                        <div class="callout">
+                            <h3>System != just software</h3>
+                            <p>It includes hardware, electronics, and integration.</p>
+                        </div>
+                        <h3 class="section-title">System includes</h3>
+                        <ul>
+                            <li>Software running on processors</li>
+                            <li>Hardware (chips, boards, sensors)</li>
+                            <li>ECUs (Electronic Control Units)</li>
+                            <li>Mechanical parts (housing, connectors)</li>
+                            <li>Communication networks (CAN, Ethernet, LIN)</li>
+                            <li>Power supply and actuators</li>
+                        </ul>
+                        <div class="callout secondary">
+                            <h3>SYS vs SWE</h3>
+                            <p>SYS is system-level (HW + SW); SWE is software-only.</p>
+                        </div>
+                    </div>
+                    <div class="visual">
+                        <svg class="v-model-svg" viewBox="0 0 420 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="System elements">
+                            <rect x="30" y="30" width="360" height="240" rx="24" fill="#f9f3ed" stroke="#e2d9cf" />
+                            <rect x="70" y="70" width="120" height="70" rx="12" fill="#ffd6c8" />
+                            <rect x="230" y="70" width="120" height="70" rx="12" fill="#d7e7ff" />
+                            <rect x="70" y="170" width="120" height="70" rx="12" fill="#d7e7ff" />
+                            <rect x="230" y="170" width="120" height="70" rx="12" fill="#ffd6c8" />
+                            <text x="130" y="110" text-anchor="middle" font-size="14">Software</text>
+                            <text x="290" y="110" text-anchor="middle" font-size="14">Hardware</text>
+                            <text x="130" y="210" text-anchor="middle" font-size="14">ECU</text>
+                            <text x="290" y="210" text-anchor="middle" font-size="14">Networks</text>
+                        </svg>
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>SYS vs SWE</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="SYS.1">
+                <h1 class="slide-title">SYS.1 - Requirements Elicitation</h1>
+                <div class="content two-col">
+                    <div class="stack">
+                        <div class="callout">
+                            <h3>Purpose</h3>
+                            <p>Gather stakeholder needs and establish baseline.</p>
+                        </div>
+                        <div class="callout secondary">
+                            <h3>Outcome</h3>
+                            <p>Agreed stakeholder requirements with change control.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-title">Key activities</h3>
+                        <ul>
+                            <li>Obtain requirements from stakeholders</li>
+                            <li>Ensure mutual understanding</li>
+                            <li>Get explicit agreement</li>
+                            <li>Establish formal baseline</li>
+                            <li>Manage changes with impact assessment</li>
+                            <li>Set up status tracking mechanism</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>SYS processes</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="SYS.2">
+                <h1 class="slide-title">SYS.2 - System Requirements Analysis</h1>
+                <div class="content two-col">
+                    <div class="stack">
+                        <div class="callout">
+                            <h3>Purpose</h3>
+                            <p>Transform stakeholder needs into detailed system requirements.</p>
+                        </div>
+                        <div class="callout secondary">
+                            <h3>Outcome</h3>
+                            <p>Detailed, traceable, testable system requirements.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-title">Key activities</h3>
+                        <ul>
+                            <li>Specify system requirements (functions and capabilities)</li>
+                            <li>Structure and prioritize them</li>
+                            <li>Analyze for correctness, feasibility, verifiability</li>
+                            <li>Analyze impact on environment and interfaces</li>
+                            <li>Develop verification criteria</li>
+                            <li>Establish bidirectional traceability (stakeholder requirements)</li>
+                            <li>Ensure consistency</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>SYS processes</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="SYS.3">
+                <h1 class="slide-title">SYS.3 - System Architectural Design</h1>
+                <div class="content two-col">
+                    <div class="stack">
+                        <div class="callout">
+                            <h3>Purpose</h3>
+                            <p>Define system architecture and allocate requirements.</p>
+                        </div>
+                        <div class="callout secondary">
+                            <h3>Outcome</h3>
+                            <p>System architecture with allocated requirements and defined interfaces.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-title">Key activities</h3>
+                        <ul>
+                            <li>Develop system architectural design (HW + SW elements)</li>
+                            <li>Allocate system requirements to elements</li>
+                            <li>Define interfaces between elements</li>
+                            <li>Evaluate dynamic behavior and interactions</li>
+                            <li>Evaluate alternative architectures</li>
+                            <li>Establish bidirectional traceability (system requirements)</li>
+                            <li>Ensure consistency</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>SYS processes</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="SYS.4">
+                <h1 class="slide-title">SYS.4 - System Integration and Integration Test</h1>
+                <div class="content two-col">
+                    <div class="stack">
+                        <div class="callout">
+                            <h3>Purpose</h3>
+                            <p>Integrate system items and verify architectural design.</p>
+                        </div>
+                        <div class="callout secondary">
+                            <h3>Outcome</h3>
+                            <p>Integrated system verified against architectural design.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-title">Key activities</h3>
+                        <ul>
+                            <li>Develop integration strategy (sequence of integration)</li>
+                            <li>Develop integration test strategy (including regression)</li>
+                            <li>Create test cases proving compliance with architecture</li>
+                            <li>Integrate items step by step</li>
+                            <li>Select and execute test cases</li>
+                            <li>Establish bidirectional traceability: architecture -> test cases -> results</li>
+                            <li>Ensure consistency</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>SYS processes</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="SYS.5">
+                <h1 class="slide-title">SYS.5 - System Qualification Test</h1>
+                <div class="content two-col">
+                    <div class="stack">
+                        <div class="callout">
+                            <h3>Purpose</h3>
+                            <p>Verify complete system against system requirements.</p>
+                        </div>
+                        <div class="callout secondary">
+                            <h3>Outcome</h3>
+                            <p>System ready for delivery, verified against all requirements.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-title">Key activities</h3>
+                        <ul>
+                            <li>Develop qualification test strategy (including regression)</li>
+                            <li>Create test cases proving compliance with system requirements</li>
+                            <li>Select and execute test cases</li>
+                            <li>Record test results and logs</li>
+                            <li>Establish bidirectional traceability: requirements -> test cases -> results</li>
+                            <li>Ensure consistency</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>SYS processes</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="SWE.1">
+                <h1 class="slide-title">SWE.1 - Software Requirements Analysis</h1>
+                <div class="content two-col">
+                    <div class="stack">
+                        <div class="callout">
+                            <h3>Purpose</h3>
+                            <p>Transform system requirements into software requirements.</p>
+                        </div>
+                        <div class="callout secondary">
+                            <h3>Outcome</h3>
+                            <p>Detailed, traceable, testable software requirements.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-title">Key activities</h3>
+                        <ul>
+                            <li>Specify software requirements from system requirements</li>
+                            <li>Structure and prioritize them</li>
+                            <li>Analyze for correctness, feasibility, verifiability</li>
+                            <li>Analyze impact on operating environment</li>
+                            <li>Develop verification criteria</li>
+                            <li>Establish bidirectional traceability (system requirements and architecture)</li>
+                            <li>Ensure consistency</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>SWE processes</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="SWE.2">
+                <h1 class="slide-title">SWE.2 - Software Architectural Design</h1>
+                <div class="content two-col">
+                    <div class="stack">
+                        <div class="callout">
+                            <h3>Purpose</h3>
+                            <p>Define software architecture and allocate requirements.</p>
+                        </div>
+                        <div class="callout secondary">
+                            <h3>Outcome</h3>
+                            <p>Software architecture with allocated requirements and interfaces.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-title">Key activities</h3>
+                        <ul>
+                            <li>Develop software architectural design (modules, components)</li>
+                            <li>Allocate software requirements to elements</li>
+                            <li>Define interfaces between software elements</li>
+                            <li>Evaluate timing and dynamic interactions</li>
+                            <li>Document resource consumption (memory, CPU)</li>
+                            <li>Evaluate alternative architectures</li>
+                            <li>Establish bidirectional traceability (software requirements)</li>
+                            <li>Ensure consistency</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>SWE processes</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="SWE.3">
+                <h1 class="slide-title">SWE.3 - Software Detailed Design and Unit Construction</h1>
+                <div class="content two-col">
+                    <div class="stack">
+                        <div class="callout">
+                            <h3>Purpose</h3>
+                            <p>Design software units and implement them.</p>
+                        </div>
+                        <div class="callout secondary">
+                            <h3>Outcome</h3>
+                            <p>Detailed design plus implemented and documented units.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-title">Key activities</h3>
+                        <ul>
+                            <li>Develop detailed design for each component (functions, classes)</li>
+                            <li>Specify interfaces of each unit</li>
+                            <li>Evaluate dynamic behavior and unit interactions</li>
+                            <li>Evaluate design quality (complexity, testability, risks)</li>
+                            <li>Establish bidirectional traceability: requirements -> units</li>
+                            <li>Ensure consistency</li>
+                            <li>Develop and document executable code</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>SWE processes</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="SWE.4">
+                <h1 class="slide-title">SWE.4 - Software Unit Verification</h1>
+                <div class="content two-col">
+                    <div class="stack">
+                        <div class="callout">
+                            <h3>Purpose</h3>
+                            <p>Verify units against detailed design and requirements.</p>
+                        </div>
+                        <div class="callout secondary">
+                            <h3>Outcome</h3>
+                            <p>Verified units with evidence of compliance.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-title">Key activities</h3>
+                        <ul>
+                            <li>Develop unit verification strategy (testing and static analysis)</li>
+                            <li>Define verification criteria (test cases, coverage, coding standards)</li>
+                            <li>Perform static verification (code reviews, static analysis)</li>
+                            <li>Execute unit tests and record results</li>
+                            <li>Establish bidirectional traceability: units -> design -> test cases -> results</li>
+                            <li>Ensure consistency</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>SWE processes</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="SWE.5">
+                <h1 class="slide-title">SWE.5 - Software Integration and Integration Test</h1>
+                <div class="content two-col">
+                    <div class="stack">
+                        <div class="callout">
+                            <h3>Purpose</h3>
+                            <p>Integrate units into complete software and verify architecture.</p>
+                        </div>
+                        <div class="callout secondary">
+                            <h3>Outcome</h3>
+                            <p>Integrated software verified against architectural design.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-title">Key activities</h3>
+                        <ul>
+                            <li>Develop integration strategy (sequence of integration)</li>
+                            <li>Develop integration test strategy (including regression)</li>
+                            <li>Create test cases proving compliance with software architecture</li>
+                            <li>Integrate units step by step</li>
+                            <li>Select and execute test cases</li>
+                            <li>Establish bidirectional traceability: architecture -> test cases -> results</li>
+                            <li>Ensure consistency</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>SWE processes</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="SWE.6">
+                <h1 class="slide-title">SWE.6 - Software Qualification Test</h1>
+                <div class="content two-col">
+                    <div class="stack">
+                        <div class="callout">
+                            <h3>Purpose</h3>
+                            <p>Verify complete software against software requirements.</p>
+                        </div>
+                        <div class="callout secondary">
+                            <h3>Outcome</h3>
+                            <p>Software ready for system integration, verified against all requirements.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="section-title">Key activities</h3>
+                        <ul>
+                            <li>Develop qualification test strategy (including regression)</li>
+                            <li>Create test cases proving compliance with software requirements</li>
+                            <li>Select and execute test cases</li>
+                            <li>Record test results and logs</li>
+                            <li>Establish bidirectional traceability: requirements -> test cases -> results</li>
+                            <li>Ensure consistency</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>SWE processes</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="PAM">
+                <h1 class="slide-title">The Process Assessment Model (PAM)</h1>
+                <div class="content">
+                    <ul>
+                        <li>PAM is the measurement framework for process capability.</li>
+                        <li>It defines capability levels and Process Attributes (PA).</li>
+                        <li>Assessments rate achievement and determine the capability level.</li>
+                        <li>Automotive projects typically target Level 2 or 3.</li>
+                    </ul>
+                </div>
+                <div class="footer">
+                    <span>PAM basics</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="Capability Levels">
+                <h1 class="slide-title">Capability Levels (0 to 5)</h1>
+                <div class="content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Level</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Level 0: Incomplete process</td>
+                                <td>Not implemented or fails; little or no systematic achievement.</td>
+                            </tr>
+                            <tr>
+                                <td>Level 1: Performed process</td>
+                                <td>Process achieves its purpose.</td>
+                            </tr>
+                            <tr>
+                                <td>Level 2: Managed process</td>
+                                <td>Planned, monitored, and adjusted; work products controlled.</td>
+                            </tr>
+                            <tr>
+                                <td>Level 3: Established process</td>
+                                <td>Defined process in use; capable of achieving outcomes.</td>
+                            </tr>
+                            <tr>
+                                <td>Level 4: Predictable process</td>
+                                <td>Operates within defined limits; measured and quantitatively controlled.</td>
+                            </tr>
+                            <tr>
+                                <td>Level 5: Innovating process</td>
+                                <td>Continuously improved to meet organizational change.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="footer">
+                    <span>Capability levels</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="PA Mapping">
+                <h1 class="slide-title">Capability Levels and Process Attributes</h1>
+                <div class="content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Capability Level</th>
+                                <th>Attribute ID</th>
+                                <th>Process Attributes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Level 0: Incomplete process</td>
+                                <td>-</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>Level 1: Performed process</td>
+                                <td>PA 1.1</td>
+                                <td>Process performance process attribute</td>
+                            </tr>
+                            <tr>
+                                <td rowspan="2">Level 2: Managed process</td>
+                                <td>PA 2.1</td>
+                                <td>Performance management process attribute</td>
+                            </tr>
+                            <tr>
+                                <td>PA 2.2</td>
+                                <td>Work product management process attribute</td>
+                            </tr>
+                            <tr>
+                                <td rowspan="2">Level 3: Established process</td>
+                                <td>PA 3.1</td>
+                                <td>Process definition process attribute</td>
+                            </tr>
+                            <tr>
+                                <td>PA 3.2</td>
+                                <td>Process deployment process attribute</td>
+                            </tr>
+                            <tr>
+                                <td rowspan="2">Level 4: Predictable process</td>
+                                <td>PA 4.1</td>
+                                <td>Quantitative analysis process attribute</td>
+                            </tr>
+                            <tr>
+                                <td>PA 4.2</td>
+                                <td>Quantitative control process attribute</td>
+                            </tr>
+                            <tr>
+                                <td rowspan="2">Level 5: Innovating process</td>
+                                <td>PA 5.1</td>
+                                <td>Process innovation process attribute</td>
+                            </tr>
+                            <tr>
+                                <td>PA 5.2</td>
+                                <td>Process innovation implementation process attribute</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="footer">
+                    <span>PA mapping</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="Rating Scale">
+                <h1 class="slide-title">Rating Scale and Achievement Range</h1>
+                <div class="content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Rating</th>
+                                <th>Achievement Level</th>
+                                <th>Description</th>
+                                <th>Achievement Range</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>N</strong></td>
+                                <td><strong>Not achieved</strong></td>
+                                <td>There is little or no evidence of achievement of the defined process attribute in the assessed process.</td>
+                                <td>0% to 15%</td>
+                            </tr>
+                            <tr>
+                                <td><strong>P</strong></td>
+                                <td><strong>Partially achieved</strong></td>
+                                <td>There is some evidence of an approach to, and some achievement of, the defined process attribute in the assessed process. Some aspects of achievement of the process attribute may be unpredictable.</td>
+                                <td>&gt;15% to 50%</td>
+                            </tr>
+                            <tr>
+                                <td><strong>L</strong></td>
+                                <td><strong>Largely achieved</strong></td>
+                                <td>There is evidence of a systematic approach to, and significant achievement of, the defined process attribute in the assessed process. Some weaknesses related to this process attribute may exist in the assessed process.</td>
+                                <td>&gt;50% to 85%</td>
+                            </tr>
+                            <tr>
+                                <td><strong>F</strong></td>
+                                <td><strong>Fully achieved</strong></td>
+                                <td>There is evidence of a complete and systematic approach to, and full achievement of, the defined process attribute in the assessed process. No significant weaknesses related to this process attribute exist in the assessed process.</td>
+                                <td>&gt;85% to 100%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="footer">
+                    <span>Rating scale</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="Capability Model">
+                <h1 class="slide-title">Process Capability Level Model</h1>
+                <div class="content two-col">
+                    <div>
+                        <table class="capability-table">
+                            <thead>
+                                <tr>
+                                    <th>Capability Level</th>
+                                    <th>Process Attributes (PA)</th>
+                                    <th>Required Rating</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td rowspan="1"><strong>Level 1 – Performed</strong></td>
+                                    <td><strong>PA 1.1: Process Performance</strong></td>
+                                    <td>Largely</td>
+                                </tr>
+                                <tr>
+                                    <td rowspan="3"><strong>Level 2 – Managed</strong></td>
+                                    <td>PA 1.1: Process Performance</td>
+                                    <td>Fully</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>PA 2.1: Performance Management</strong></td>
+                                    <td>Largely</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>PA 2.2: Work Product Management</strong></td>
+                                    <td>Largely</td>
+                                </tr>
+                                <tr>
+                                    <td rowspan="5"><strong>Level 3 – Established</strong></td>
+                                    <td>PA 1.1: Process Performance</td>
+                                    <td>Fully</td>
+                                </tr>
+                                <tr>
+                                    <td>PA 2.1: Performance Management</td>
+                                    <td>Fully</td>
+                                </tr>
+                                <tr>
+                                    <td>PA 2.2: Work Product Management</td>
+                                    <td>Fully</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>PA 3.1: Process Definition</strong></td>
+                                    <td>Largely</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>PA 3.2: Process Deployment</strong></td>
+                                    <td>Largely</td>
+                                </tr>
+                                <tr>
+                                    <td rowspan="7"><strong>Level 4 – Predictable</strong></td>
+                                    <td>PA 1.1: Process Performance</td>
+                                    <td>Fully</td>
+                                </tr>
+                                <tr>
+                                    <td>PA 2.1: Performance Management</td>
+                                    <td>Fully</td>
+                                </tr>
+                                <tr>
+                                    <td>PA 2.2: Work Product Management</td>
+                                    <td>Fully</td>
+                                </tr>
+                                <tr>
+                                    <td>PA 3.1: Process Definition</td>
+                                    <td>Fully</td>
+                                </tr>
+                                <tr>
+                                    <td>PA 3.2: Process Deployment</td>
+                                    <td>Fully</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>PA 4.1: Quantitative Analysis</strong></td>
+                                    <td>Largely</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>PA 4.2: Quantitative Control</strong></td>
+                                    <td>Largely</td>
+                                </tr>
+                                <tr>
+                                    <td rowspan="9"><strong>Level 5 – Innovating</strong></td>
+                                    <td>PA 1.1: Process Performance</td>
+                                    <td>Fully</td>
+                                </tr>
+                                <tr>
+                                    <td>PA 2.1: Performance Management</td>
+                                    <td>Fully</td>
+                                </tr>
+                                <tr>
+                                    <td>PA 2.2: Work Product Management</td>
+                                    <td>Fully</td>
+                                </tr>
+                                <tr>
+                                    <td>PA 3.1: Process Definition</td>
+                                    <td>Fully</td>
+                                </tr>
+                                <tr>
+                                    <td>PA 3.2: Process Deployment</td>
+                                    <td>Fully</td>
+                                </tr>
+                                <tr>
+                                    <td>PA 4.1: Quantitative Analysis</td>
+                                    <td>Fully</td>
+                                </tr>
+                                <tr>
+                                    <td>PA 4.2: Quantitative Control</td>
+                                    <td>Fully</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>PA 5.1: Process Innovation</strong></td>
+                                    <td>Largely</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>PA 5.2: Process Innovation Implementation</strong></td>
+                                    <td>Largely</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <ul class="capability-notes">
+                            <li>Largely or Fully achieved means the PA rating is at least Largely.</li>
+                            <li>Higher levels require all lower-level PAs to be Fully achieved.</li>
+                        </ul>
+                    </div>
+                    <div class="visual top-align capability-visual">
+                        <img src="images/assessment_indicators_and_process_capability.png" alt="Process Capability Level Model" />
+                    </div>
+                </div>
+                <div class="footer">
+                    <span>Capability model</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="Traceability">
+                <h1 class="slide-title">Traceability - What and Why</h1>
+                <div class="content">
+                    <ul>
+                        <li>Traceability = links between work products</li>
+                        <li>Bidirectional traceability:
+                            <ul>
+                                <li>Downstream (forward): Requirements -> Design -> Code -> Tests</li>
+                                <li>Upstream (backward): Tests -> Code -> Design -> Requirements</li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <div class="two-col">
+                        <div class="card">
+                            <h3>Downstream (forward)</h3>
+                            <p>Requirements -> Design -> Code -> Tests</p>
+                        </div>
+                        <div class="card">
+                            <h3>Upstream (backward)</h3>
+                            <p>Tests -> Code -> Design -> Requirements</p>
+                        </div>
+                    </div>
+                    <ul>
+                        <li>Why it matters:
+                            <ul>
+                                <li>Completeness: everything is implemented and tested</li>
+                                <li>Necessity: no undefined extra code</li>
+                                <li>Impact analysis: know what to fix when requirements change</li>
+                                <li>Answers: "Where is this implemented? Which test verifies it?"</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+                <div class="footer">
+                    <span>Traceability</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="Consistency">
+                <h1 class="slide-title">Consistency - More Than Just Links</h1>
+                <div class="content">
+                    <ul>
+                        <li>Consistency = content and meaning match</li>
+                        <li>Traceability != Consistency</li>
+                    </ul>
+                    <div class="two-col">
+                        <div class="card">
+                            <h3>Traceability</h3>
+                            <p>"A is linked to B"</p>
+                        </div>
+                        <div class="card">
+                            <h3>Consistency</h3>
+                            <p>"A and B actually say the same thing"</p>
+                        </div>
+                    </div>
+                    <ul>
+                        <li>Example:
+                            <ul>
+                                <li>Requirement: "Alert on GNSS fix loss"</li>
+                                <li>Design: "Display alert when fix lost"</li>
+                                <li>Design: "Alert when TTF &gt; expected" (inconsistent)</li>
+                            </ul>
+                        </li>
+                        <li>Every process checks both:
+                            <ul>
+                                <li>"Establish bidirectional traceability"</li>
+                                <li>"Ensure consistency"</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+                <div class="footer">
+                    <span>Consistency</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="Traceability Matrix">
+                <h1 class="slide-title">Practical Example - Traceability Matrix</h1>
+                <div class="content">
+                    <ul>
+                        <li>Example: GNSS software module</li>
+                        <li>Traceability Matrix:</li>
+                    </ul>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Requirement/Test</th>
+                                <th>TC-010 (Nominal)</th>
+                                <th>TC-011 (UTC)</th>
+                                <th>TC-012 (Fix-loss)</th>
+                                <th>TC-013 (Rate)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>SWR-001 (pos @1Hz)</td>
+                                <td>X</td>
+                                <td></td>
+                                <td></td>
+                                <td>X</td>
+                            </tr>
+                            <tr>
+                                <td>SWR-002 (UTC <= 1s)</td>
+                                <td>X</td>
+                                <td>X</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>SWR-003 (NO_FIX)</td>
+                                <td></td>
+                                <td></td>
+                                <td>X</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <ul>
+                        <li>Many-to-many relationships are OK</li>
+                        <li>One test can verify multiple requirements</li>
+                        <li>One requirement can have multiple tests</li>
+                    </ul>
+                </div>
+                <div class="footer">
+                    <span>Traceability example</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="Key Takeaways">
+                <h1 class="slide-title">Key Takeaways for Developers</h1>
+                <div class="content">
+                    <ul>
+                        <li>ASPICE is about how we work, not what tools we use</li>
+                        <li>V-model ensures early test planning and traceability</li>
+                        <li>SYS processes: complete system (HW + SW)</li>
+                        <li>SWE processes: software only</li>
+                        <li>Left side of V: development (requirements -> design -> code)</li>
+                        <li>Right side of V: verification (tests proving compliance)</li>
+                        <li>Traceability: links between work products</li>
+                        <li>Consistency: content actually matches</li>
+                        <li>Process capability: levels show process maturity</li>
+                        <li>Most important: do it continuously, not just before audits</li>
+                    </ul>
+                </div>
+                <div class="footer">
+                    <span>Wrap-up</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+
+            <section class="slide" data-title="Q&A">
+                <h1 class="slide-title">Q&amp;A / Discussion</h1>
+                <div class="content">
+                    <ul>
+                        <li>Questions?</li>
+                        <li>Common questions:
+                            <ul>
+                                <li>How does Agile/Scrum fit with ASPICE?</li>
+                                <li>What is the difference between system and software requirements?</li>
+                                <li>How do we handle traceability in practice?</li>
+                                <li>What tools should we use?</li>
+                                <li>How do we prepare for assessments?</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+                <div class="footer">
+                    <span>Discussion</span>
+                    <span class="count"></span>
+                </div>
+            </section>
+        </div>
+
+        <div class="controls">
+            <button id="prev" type="button">Prev</button>
+            <button id="next" type="button">Next</button>
+        </div>
+    </div>
+
+    <script>
+        const slides = Array.from(document.querySelectorAll(".slide"));
+        const countEls = document.querySelectorAll(".count");
+        const progress = document.getElementById("progress");
+        const prevButton = document.getElementById("prev");
+        const nextButton = document.getElementById("next");
+        const lockButton = document.getElementById("lockOrientation");
+        const orientationOverlay = document.getElementById("orientationOverlay");
+        let current = 0;
+        const baseSize = { width: 1200, height: 720 };
+        const deckPadding = 64;
+
+        const applyScale = () => {
+            const availableWidth = Math.max(window.innerWidth - deckPadding, 320);
+            const availableHeight = Math.max(window.innerHeight - deckPadding, 240);
+            const scale = Math.min(
+                availableWidth / baseSize.width,
+                availableHeight / baseSize.height
+            );
+            document.documentElement.style.setProperty("--scale", scale.toFixed(4));
+        };
+
+        const update = () => {
+            slides.forEach((slide, index) => {
+                slide.classList.toggle("active", index === current);
+            });
+
+            const total = slides.length;
+            const label = `${current + 1} / ${total}`;
+            countEls.forEach((el) => {
+                el.textContent = label;
+            });
+
+            progress.style.width = `${((current + 1) / total) * 100}%`;
+            prevButton.disabled = current === 0;
+            nextButton.disabled = current === total - 1;
+        };
+
+        const refreshOrientationOverlay = () => {
+            const isPortrait = window.matchMedia("(orientation: portrait)").matches;
+            if (orientationOverlay) {
+                orientationOverlay.style.display = isPortrait ? "flex" : "none";
+            }
+        };
+
+        const requestLandscapeLock = async () => {
+            if (!screen.orientation || !screen.orientation.lock) {
+                return;
+            }
+            try {
+                await screen.orientation.lock("landscape");
+            } catch (error) {
+                // Lock can fail unless triggered in fullscreen or by user gesture.
+            }
+        };
+
+        const go = (direction) => {
+            const nextIndex = current + direction;
+            if (nextIndex < 0 || nextIndex >= slides.length) {
+                return;
+            }
+            current = nextIndex;
+            update();
+        };
+
+        prevButton.addEventListener("click", () => go(-1));
+        nextButton.addEventListener("click", () => go(1));
+        if (lockButton) {
+            lockButton.addEventListener("click", () => {
+                requestLandscapeLock();
+            });
+        }
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "ArrowRight" || event.key === "PageDown") {
+                go(1);
+            }
+            if (event.key === "ArrowLeft" || event.key === "PageUp") {
+                go(-1);
+            }
+        });
+
+        window.addEventListener("resize", applyScale);
+        window.addEventListener("orientationchange", refreshOrientationOverlay);
+        applyScale();
+        update();
+        refreshOrientationOverlay();
+    </script>
+</body>
+</html>
